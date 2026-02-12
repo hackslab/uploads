@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simple File Uploader</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=dataset:wght@400;500;600&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f8f9fa;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        color: #333;
+      }
+      .container {
+        background-color: white;
+        padding: 2.5rem;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+        text-align: center;
+        width: 100%;
+        max-width: 400px;
+        transition: transform 0.2s ease;
+      }
+      h2 {
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+        color: #1a1a1a;
+        font-weight: 600;
+      }
+      p.subtitle {
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin-bottom: 2rem;
+      }
+
+      /* Drag and Drop Zone */
+      .drop-zone {
+        border: 2px dashed #cbd5e0;
+        border-radius: 8px;
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        background-color: #fafafa;
+      }
+
+      .drop-zone:hover,
+      .drop-zone.dragover {
+        border-color: #4299e1;
+        background-color: #ebf8ff;
+      }
+
+      .drop-zone__input {
+        display: none;
+      }
+
+      .drop-zone__prompt {
+        color: #718096;
+        font-size: 1rem;
+        pointer-events: none;
+      }
+
+      .drop-zone__icon {
+        font-size: 3rem;
+        color: #a0aec0;
+        margin-bottom: 1rem;
+        display: block;
+      }
+
+      .drop-zone:hover .drop-zone__icon,
+      .drop-zone.dragover .drop-zone__icon {
+        color: #4299e1;
+      }
+
+      .file-info {
+        display: none;
+        margin-top: 1rem;
+        padding: 0.75rem;
+        background-color: #edf2f7;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        text-align: left;
+        align-items: center;
+      }
+
+      .file-info.active {
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .file-name {
+        font-weight: 500;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 200px;
+      }
+
+      .upload-btn {
+        background-color: #4299e1;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 500;
+        width: 100%;
+        margin-top: 1.5rem;
+        transition: background-color 0.2s;
+        display: block;
+      }
+
+      .upload-btn:hover {
+        background-color: #3182ce;
+      }
+
+      .upload-btn:disabled {
+        background-color: #a0aec0;
+        cursor: not-allowed;
+      }
+
+      /* success message styles if needed later */
+      .toast {
+        visibility: hidden;
+        min-width: 250px;
+        background-color: #333;
+        color: #fff;
+        text-align: center;
+        border-radius: 4px;
+        padding: 16px;
+        position: fixed;
+        z-index: 1;
+        bottom: 30px;
+      }
+
+      .toast.show {
+        visibility: visible;
+        -webkit-animation:
+          fadein 0.5s,
+          fadeout 0.5s 2.5s;
+        animation:
+          fadein 0.5s,
+          fadeout 0.5s 2.5s;
+      }
+
+      @-webkit-keyframes fadein {
+        from {
+          bottom: 0;
+          opacity: 0;
+        }
+        to {
+          bottom: 30px;
+          opacity: 1;
+        }
+      }
+
+      @keyframes fadein {
+        from {
+          bottom: 0;
+          opacity: 0;
+        }
+        to {
+          bottom: 30px;
+          opacity: 1;
+        }
+      }
+
+      @-webkit-keyframes fadeout {
+        from {
+          bottom: 30px;
+          opacity: 1;
+        }
+        to {
+          bottom: 0;
+          opacity: 0;
+        }
+      }
+
+      @keyframes fadeout {
+        from {
+          bottom: 30px;
+          opacity: 1;
+        }
+        to {
+          bottom: 0;
+          opacity: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Upload File</h2>
+      <p class="subtitle">Drag and drop your file here</p>
+
+      <form
+        action="/upload"
+        method="post"
+        enctype="multipart/form-data"
+        id="uploadForm"
+      >
+        <div class="drop-zone" id="dropZone">
+          <span class="drop-zone__icon">☁️</span>
+          <span class="drop-zone__prompt"
+            >Drop file here or click to upload</span
+          >
+          <input
+            type="file"
+            name="file"
+            class="drop-zone__input"
+            id="fileInput"
+            required
+          />
+        </div>
+
+        <div class="file-info" id="fileInfo">
+          <span class="file-name" id="fileName">No file selected</span>
+          <span style="color: #e53e3e; cursor: pointer" id="removeFile">×</span>
+        </div>
+
+        <button type="submit" class="upload-btn" id="submitBtn">
+          Upload File
+        </button>
+      </form>
+    </div>
+
+    <script>
+      const dropZone = document.getElementById("dropZone");
+      const fileInput = document.getElementById("fileInput");
+      const fileInfo = document.getElementById("fileInfo");
+      const fileName = document.getElementById("fileName");
+      const removeFile = document.getElementById("removeFile");
+      const form = document.getElementById("uploadForm");
+
+      // Prevent default drag behaviors
+      ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+        document.body.addEventListener(eventName, preventDefaults, false);
+      });
+
+      // Highlight drop zone when item is dragged over it
+      ["dragenter", "dragover"].forEach((eventName) => {
+        dropZone.addEventListener(eventName, highlight, false);
+      });
+
+      ["dragleave", "drop"].forEach((eventName) => {
+        dropZone.addEventListener(eventName, unhighlight, false);
+      });
+
+      // Handle dropped files
+      dropZone.addEventListener("drop", handleDrop, false);
+
+      // Handle click on drop zone
+      dropZone.addEventListener("click", () => {
+        fileInput.click();
+      });
+
+      // Handle file selection via input
+      fileInput.addEventListener("change", function () {
+        if (this.files.length) {
+          updateThumbnail(this.files[0]);
+        }
+      });
+
+      removeFile.addEventListener("click", (e) => {
+        e.stopPropagation(); // prevent triggering dropZone click
+        fileInput.value = ""; // clear input
+        fileInfo.classList.remove("active");
+        dropZone.style.display = "block";
+      });
+
+      function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      function highlight(e) {
+        dropZone.classList.add("dragover");
+      }
+
+      function unhighlight(e) {
+        dropZone.classList.remove("dragover");
+      }
+
+      function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+
+        if (files.length) {
+          fileInput.files = files; // Assign dropped files to input
+          updateThumbnail(files[0]);
+        }
+      }
+
+      function updateThumbnail(file) {
+        dropZone.style.display = "none";
+        fileInfo.classList.add("active");
+        fileName.textContent = file.name;
+      }
+    </script>
+  </body>
+</html>
