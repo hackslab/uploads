@@ -4,7 +4,8 @@ const path = require("path");
 const fs = require("fs");
 
 const app = express();
-const port = 9000;
+const PORT = process.env.PORT || 9000;
+const URL = process.env.URL || "http://localhost";
 
 // Set up storage for uploaded files
 const storage = multer.diskStorage({
@@ -111,6 +112,6 @@ app.post("/upload", upload.single("file"), (req, res) => {
   `);
 });
 
-app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
+app.listen(PORT, () => {
+  console.log(`Server is running at ${URL}:${PORT}`);
 });
